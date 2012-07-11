@@ -305,7 +305,11 @@ class NiftyColor
     return array($arr, $notation);
   }
 
-  protected $str, $default_notation;
+  private $str, $default_notation;
+
+  function success() {
+    return (boolean) self::parse($this->str);
+  }
 
   function __construct($str, $notation=null) {
     $this->str = $str;
