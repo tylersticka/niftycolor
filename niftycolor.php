@@ -322,7 +322,16 @@ class NiftyColor
   }
 
   function __get($name) {
-    if (in_array($name, array('r','g','b','a'))) {
+    if ($name === 'hex_nohash') {
+      return str_replace('#', '', self::convert($this->str, 'hex'));
+    } elseif ($name === 'hex_shorthand') {
+      $hex = self::convert($this->str, 'hex');
+      return (
+        $hex[1] === $hex[2] &&
+        $hex[3] === $hex[4] &&
+        $hex[5] === $hex[6]
+      ) ? '#'.$hex[1].$hex[3].$hex[5] : $hex;
+    } elseif (in_array($name, array('r','g','b','a'))) {
       list($arr, $notation) = self::parse($this->str);
       list($r, $g, $b, $a) = $arr;
       return $$name;
