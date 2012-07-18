@@ -258,7 +258,10 @@ niftyColor.parse = function (str) {
     notation = 'keyword';
     arr = this.keywords[str];
   }
-  return arr ? [arr, notation] : false;
+  return arr ? {
+    'values': arr, 
+    'notation': notation
+  } : false;
 };
 
 console.log(niftyColor.parse('#0033cc'));
