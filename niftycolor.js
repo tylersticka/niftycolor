@@ -1,3 +1,11 @@
+/**
+ * TODO:
+ * - Troubleshoot pattern problem with HSL values with decimal points
+ * - Make percentages in RGB work
+ * - Clean up structure of this
+ * - Come up with more object-oriented usage pattern
+ */
+
 var niftyColor = {
   version: [0, 1],
   keywords: {
@@ -152,6 +160,10 @@ var niftyColor = {
   }
 };
 
+niftyColor._capitalize = function (str) {
+  return str[0].toUpperCase() + str.substr(1);
+};
+
 niftyColor._numericArray = function (arr) {
   var i = 0;
   for ( ; i<arr.length; i++) {
@@ -160,7 +172,7 @@ niftyColor._numericArray = function (arr) {
   return arr;
 };
 
-niftyColor._hueToRGB = function (h, temp1, temp2) {
+niftyColor._hueToRgb = function (h, temp1, temp2) {
   if (h < 0) {
     h += 1;
   } else if (h > 1) {
@@ -172,6 +184,36 @@ niftyColor._hueToRGB = function (h, temp1, temp2) {
   if (3 * h < 2) return temp1 + (temp2 - temp1) * (2/3 - h) * 6;
 
   return temp1;
+};
+
+niftyColor._calculateHsl = function (arr) {
+  var r = arr[0] / 255
+    , g = arr[1] / 255
+    , b = arr[2] / 255
+    , min = Math.min(r, g, b)
+    , max = Math.max(r, g, b)
+    , h
+    , s
+    , l = (min + max) / 2;
+
+  if (min === max) {
+    s = h = 0;
+  } else {
+    s = (max - min) / ((l < 0.5) ? max + min : 2 - max - min);
+    if (r === max) {
+      h = (g - b) / (max - min);
+    } else if (g === max) {
+      h = 2 + (b - r) / (max - min);
+    } else if (b === max) {
+      h = 4 + (r - g) / (max - min);
+    }
+  }
+
+  return [
+    ((h < 0) ? h + 6 : h) * 60,
+    s * 100,
+    l * 100
+  ];
 };
 
 niftyColor.hexToArray = function (str) {
@@ -220,9 +262,9 @@ niftyColor.hslToArray = function (str, pattern) {
     if (s > 0) {
       temp2 = (l < 0.5) ? l * (1 + s) : l + s - l * s;
       temp1 = 2 * l - temp2;
-      r = this._hueToRGB(h + 1/3, temp1, temp2);
-      g = this._hueToRGB(h, temp1, temp2);
-      b = this._hueToRGB(h - 1/3, temp1, temp2);
+      r = this._hueToRgb(h + 1/3, temp1, temp2);
+      g = this._hueToRgb(h, temp1, temp2);
+      b = this._hueToRgb(h - 1/3, temp1, temp2);
     } else {
       r = g = b = l;
     }
@@ -238,6 +280,34 @@ niftyColor.hslToArray = function (str, pattern) {
 
 niftyColor.hslaToArray = function (str) {
   return this.hslToArray(str, this.patterns.hsla);
+};
+
+niftyColor.arrayToHex = function (arr) {
+  var str = '#'
+    , i = 0
+    , value;
+  for ( ; i < arr.length - 1; i++) {
+    value = arr[i];
+    if (value < 16) str += '0';
+    if (value < 0) value = 0xFFFFFFFF + value + 1;
+    str += parseInt(value, 10).toString(16);
+  };
+  return str.toUpperCase();
+};
+
+niftyColor.arrayToRgb = function (arr) {
+  return 'rgb(' + arr.slice(0, -1).join(', ') + ')';
+};
+
+niftyColor.arrayToRgba = function (arr) {
+  return 'rgba(' + arr.join(', ') + ')';
+};
+
+niftyColor.arrayToHsl = function (arr) {
+  arr = this._calculateHsl(arr);
+  arr[1] += '%';
+  arr[2] += '%';
+  return 'hsl(' + arr.join(', ') + ')';
 };
 
 niftyColor.parse = function (str) {
@@ -264,11 +334,30 @@ niftyColor.parse = function (str) {
   } : false;
 };
 
-console.log(niftyColor.parse('#0033cc'));
-console.log(niftyColor.parse('#03c'));
-console.log(niftyColor.parse('rgb(0,51,204)'));
-console.log(niftyColor.parse('rgba(0,51,204, 0.5)'));
-console.log(niftyColor.parse('hsl(55,50%,50%)'));
-console.log(niftyColor.parse('hsla(55,50%,50%, 0.5)'));
-console.log(niftyColor.parse('red'));
-console.log(niftyColor.parse('flewg'));
+niftyColor.convert = function (str, notation) {
+  var parsed = this.parse(str)
+    , method;
+  if (parsed) {
+    notation = notation || parsed.notation;
+    method = 'arrayTo' + this._capitalize(notation);
+    if (this[method]) {
+      return this[method](parsed.values);
+    }
+  }
+  return false;
+};
+
+// console.log(niftyColor.convert('#321923', 'rgb'));
+// console.log(niftyColor.convert('rgb(50,25,35)', 'hex'));
+// console.log(niftyColor.convert('rgb(50,25,35)', 'hsl'));
+console.log(niftyColor.parse('hsl(336, 33.33333333333333%, 14.705882352941178%)'));
+
+// console.log(niftyColor.parse('#0033cc'));
+// console.log(niftyColor.parse('#03c'));
+// console.log(niftyColor.parse('rgb(0,51,204)'));
+// console.log(niftyColor.parse('rgba(0,51,204, 0.5)'));
+// console.log(niftyColor.parse('hsl(55,50%,50%)'));
+// console.log(niftyColor.parse('hsla(55,50%,50%, 0.5)'));
+// console.log(niftyColor.parse('red'));
+// console.log(niftyColor.parse('flewg'));
+
